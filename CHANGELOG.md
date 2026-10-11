@@ -8,4 +8,6 @@ All notable changes to this project are documented here. The format follows
 
 ## [0.1.0]
 
-- First release.
+- Add `parse` to read a logfmt line into a typed mapping, with a bare key yielding `True`.
+- Add `serialize` to write a mapping back to a logfmt line, quoting only when needed and
+  omitting `False`.

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from ._codec import parse, serialize
+
 __version__ = "0.1.0"
 
-__all__: list[str] = []
+__all__ = ["parse", "serialize"]
