@@ -1,4 +1,4 @@
-"""Typed, zero-dependency logfmt codec: parse and serialize key=value log lines in both directions."""
+"""Typed, zero-dependency logfmt codec: parse and serialize key=value log lines."""
 
 from __future__ import annotations
 
