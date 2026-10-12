@@ -6,6 +6,13 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.2.1]
+
+### Changed
+
+- The golden test set and the sample log are now written for this project; no lines from
+  other projects' docs or tests are kept, and the sdist ships only the sources, tests and docs.
+
 ## [0.2.0]
 
 ### Added

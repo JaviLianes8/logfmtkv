@@ -11,8 +11,9 @@ pip install -r requirements-dev.txt
 ## Before you open a pull request
 
 - Keep public API in `src/logfmtkv/__init__.py`; internals live in `_`-prefixed modules.
-- Add a test for the behaviour you change. When it concerns interop, add the real line
-  to `tests/fixtures/golden.json` and name its source.
+- Add a test for the behaviour you change. When it concerns interop, write a case in
+  `tests/fixtures/golden.json` that shows the behaviour in your own words; do not paste
+  lines from other projects' docs or tests.
 - Keep every source file at 200 lines or fewer.
 - Run `scripts/check.ps1` (format, lint, types, tests) and make sure it passes.
 - One logical change per commit, imperative subject line.

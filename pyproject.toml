@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "logfmtkv"
-version = "0.2.0"
+version = "0.2.1"
 description = "Typed, zero-dependency logfmt codec: parse and serialize key=value log lines in both directions."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -36,6 +36,10 @@ Issues = "https://github.com/JaviLianes8/logfmtkv/issues"
 Changelog = "https://github.com/JaviLianes8/logfmtkv/blob/main/CHANGELOG.md"
 LinkedIn = "https://www.linkedin.com/in/jlianes/"
 Funding = "https://buymeacoffee.com/jlianesglrs"
+
+[tool.hatch.build.targets.sdist]
+include = ["src", "tests", "CHANGELOG.md", "CONTRIBUTING.md"]
+exclude = ["**/__pycache__"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/logfmtkv"]

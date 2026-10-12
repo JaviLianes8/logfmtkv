@@ -32,7 +32,7 @@ bare key and `False` is dropped.
 A logfmt line is a run of `key=value` pairs separated by whitespace:
 
 ```
-time="2015-03-26T01:27:38-04:00" level=warning msg="The group's number increased tremendously!" number=122 omg=true
+time="2026-01-05T08:00:00+01:00" level=warning msg="The baker's queue grew fast!" queue=37 rush=true
 ```
 
 - A key is any run of characters above space (U+0020) other than `=` and `"`.
@@ -203,7 +203,8 @@ status 1, and output cut short by the reader (`| head`) ends quietly.
 
 logfmt is a plain, readable log format, but the existing Python packages for it are stale
 or ship no type information. logfmtkv is fully typed, has zero dependencies, and is
-tested against real lines from go-logfmt, Heroku, Grafana Loki, logrus and Go's slog.
+tested against a hand-written golden set that mirrors the behaviour of go-logfmt, Grafana
+Loki, logrus and Go's slog.
 
 ## License
 

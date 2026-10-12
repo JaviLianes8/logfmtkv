@@ -13,7 +13,7 @@ from ._errors import LogfmtEncodeError, LogfmtError, LogfmtSyntaxError
 from ._escape import quote_value
 from ._stream import iter_pairs, iter_records
 
-__version__ = "0.2.0"
+__version__ = "0.2.1"
 
 __all__ = [
     "Duplicates",

@@ -1,4 +1,4 @@
-"""Shared access to the golden fixtures taken from real logfmt producers and parsers."""
+"""Shared access to the hand-written golden fixtures (syntax probes and app-style lines)."""
 
 from __future__ import annotations
 

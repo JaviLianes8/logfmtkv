@@ -1,4 +1,4 @@
-"""Real log lines from go-logfmt, Heroku, Loki, logrus and slog, asserted pair by pair."""
+"""Hand-written syntax probes and app-style log lines, asserted pair by pair."""
 
 from __future__ import annotations
 
@@ -40,16 +40,15 @@ def test_strict_rejects_with_the_reference_message(case: dict[str, Any]) -> None
 
 
 @pytest.mark.parametrize("case", GOLDEN["strict_errors"], ids=case_id)
-def test_go_logfmt_syntax_errors(case: dict[str, Any]) -> None:
+def test_strict_syntax_errors(case: dict[str, Any]) -> None:
     with pytest.raises(LogfmtSyntaxError) as info:
         list(iter_pairs(case["text"], strict=True))
     error = info.value
     assert (error.msg, error.pos, error.lineno) == (case["msg"], case["pos"], case["lineno"])
     assert error.line == case["text"].split("\n")[case["lineno"] - 1]
-    if case["pos"] == case["go_pos"]:
-        assert str(error) == (
-            f"logfmt syntax error at pos {case['go_pos']} on line {case['lineno']}: {case['msg']}"
-        )
+    assert str(error) == (
+        f"logfmt syntax error at pos {case['pos']} on line {case['lineno']}: {case['msg']}"
+    )
 
 
 @pytest.mark.parametrize("case", GOLDEN["strict_errors"], ids=case_id)

@@ -12,7 +12,7 @@ from conftest import GOLDEN, REAL_LOG, as_dict
 
 from logfmtkv._cli import main
 
-REAL = [c for c in GOLDEN["parse"] if c["strict"] == "same" and c["source"] != "go-logfmt"]
+REAL = [c for c in GOLDEN["parse"] if c["strict"] == "same" and c["kind"] == "app"]
 
 
 def _write(tmp_path: Path, text: str, name: str = "in.log") -> str:
@@ -176,4 +176,4 @@ def test_help_and_version(capsys: pytest.CaptureFixture[str]) -> None:
     assert "examples:" in out and "logfmtkv to-json app.log" in out
     with pytest.raises(SystemExit):
         main(["--version"])
-    assert capsys.readouterr().out.startswith("logfmtkv 0.2.0")
+    assert capsys.readouterr().out.startswith("logfmtkv 0.2.1")

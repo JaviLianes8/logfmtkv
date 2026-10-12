@@ -19,7 +19,7 @@ import pytest
 from conftest import GOLDEN, REAL_LOG, as_dict
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-REAL = [c for c in GOLDEN["parse"] if c["strict"] == "same" and c["source"] != "go-logfmt"]
+REAL = [c for c in GOLDEN["parse"] if c["strict"] == "same" and c["kind"] == "app"]
 
 
 def _exe(env_dir: Path, name: str) -> Path:
@@ -91,9 +91,9 @@ def test_installed_script_round_trips_through_json(cli: Path) -> None:
 
 
 def test_installed_script_filters_and_selects(cli: Path) -> None:
-    result = _run(cli, "to-json", str(REAL_LOG), "-w", "animal=orca", "-s", "msg,size", "--coerce")
+    result = _run(cli, "to-json", str(REAL_LOG), "-w", "oven=south", "-s", "msg,size", "--coerce")
     assert result.returncode == 0
-    assert result.stdout.decode() == '{"msg": "The ice breaks!", "size": 9009}\n'
+    assert result.stdout.decode() == '{"msg": "The oven stopped!", "size": 4096}\n'
 
 
 def test_installed_script_handles_utf8_from_stdin(cli: Path) -> None:

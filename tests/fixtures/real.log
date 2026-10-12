@@ -1,16 +1,16 @@
-at=info method=GET path=/ host=mutelight.org fwd="124.133.52.161" dyno=web.2 connect=4ms service=8ms status=200 bytes=1653
-level=info tag=stopping_fetchers id=ConsumerFetcherManager-1382721708341 module=kafka.consumer.ConsumerFetcherManager
-level=info msg="Stopping all fetchers" tag=stopping_fetchers id=ConsumerFetcherManager-1382721708341 module=kafka.consumer.ConsumerFetcherManager
-msg="Request finished" tag=request_finish status=200 user=brandur@mutelight.org user_id=1234 app=mutelight app_id=1234
-msg="Request errored" tag=request_error error_class=NoMethodError error_message="undefined method `serialize' for nil:NilClass" user=brandur@mutelight.org user_id=1234 app=mutelight app_id=1234
-at=info method=GET path=/ host=grafana.net fwd="124.133.124.161" service=8ms status=200
-key=value key="value in double quotes"
-time="2015-03-26T01:27:38-04:00" level=debug msg="Started observing beach" animal=walrus number=8
-time="2015-03-26T01:27:38-04:00" level=info msg="A group of walrus emerges from the ocean" animal=walrus size=10
-time="2015-03-26T01:27:38-04:00" level=warning msg="The group's number increased tremendously!" number=122 omg=true
-time="2015-03-26T01:27:38-04:00" level=debug msg="Temperature changes" temperature=-4
-time="2015-03-26T01:27:38-04:00" level=fatal msg="The ice breaks!" animal=orca err="It's over 9000!" number=100 omg=true size=9009
-time="2015-03-26T01:27:38-04:00" level=fatal method=github.com/sirupsen/arcticcreatures.migrate msg="a penguin swims by" animal=penguin
-time=2022-11-08T15:28:26.000-05:00 level=INFO msg=hello count=3
-level=INFO msg=finished req.method=GET req.url=localhost status=200 duration=1s
-msg=message a=1 g.b=2 g.h.c=3 g.d=4 e=5
+at=info method=POST path=/orders host=shop.example fwd="10.0.4.17" dyno=api.3 connect=2ms service=41ms status=201 bytes=2048
+level=info tag=cache_warm id=CacheWarmer-1700000000123 module=bakery.cache.CacheWarmer
+level=info msg="Warming every shelf" tag=cache_warm id=CacheWarmer-1700000000123 module=bakery.cache.CacheWarmer
+msg="Order placed" tag=order_done status=201 user=ana@shop.example user_id=42 app=bakery app_id=7
+msg="Order failed" tag=order_error error_class=KeyError error_message="missing key `flour' in pantry" user=ana@shop.example user_id=42 app=bakery app_id=7
+at=info method=GET path=/menu host=shop.example fwd="10.0.4.18" service=5ms status=200
+key=plain key="with spaces inside"
+time="2026-01-05T08:00:00+01:00" level=debug msg="Oven heating up" oven=north temp=180
+time="2026-01-05T08:00:00+01:00" level=info msg="First tray of rolls is out" oven=north trays=12
+time="2026-01-05T08:00:00+01:00" level=warning msg="The baker's queue grew fast!" queue=37 rush=true
+time="2026-01-05T08:00:00+01:00" level=debug msg="Freezer check" temp=-18
+time="2026-01-05T08:00:00+01:00" level=fatal msg="The oven stopped!" oven=south err="It's too hot to continue" queue=90 rush=true size=4096
+time="2026-01-05T08:00:00+01:00" level=fatal method=example.org/bakery/ovens.shutdown msg="a tray is left behind" oven=south
+time=2026-01-05T08:00:00.000+01:00 level=INFO msg=ready count=4
+level=INFO msg=served http.method=GET http.path=/menu status=200 duration=3ms
+msg=nested a=1 grp.b=2 grp.sub.c=3 grp.d=4 z=5
