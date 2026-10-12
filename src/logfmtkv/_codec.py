@@ -2,90 +2,123 @@
 
 from __future__ import annotations
 
-import re
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
+from typing import Literal, NamedTuple
 
-_NEEDS_QUOTE = re.compile(r'[\s="\\\x00-\x1f]')
-_UNESCAPE = {"n": "\n", "r": "\r", "t": "\t", '"': '"', "\\": "\\"}
+from ._encode import encode_pair
+from ._errors import LogfmtSyntaxError
+from ._scan import Entry, scan
+
+Duplicates = Literal["last", "first", "error"]
+_POLICIES = ("last", "first", "error")
 
 
-def parse(line: str) -> dict[str, str | bool]:
+class Pair(NamedTuple):
+    """One key/value pair of a logfmt line, in line order.
+
+    ``value`` is ``None`` for a bare key (``verbose``) and ``""`` for an explicit empty
+    value (``user=``).
+    """
+
+    key: str
+    value: str | None
+
+
+def parse(
+    line: str, *, strict: bool = False, duplicates: Duplicates = "last"
+) -> dict[str, str | bool]:
     """Parse one logfmt line into a mapping.
 
-    A ``key=value`` pair yields a string value, a quoted value is unescaped, and a bare
-    key with no ``=`` yields ``True``.
+    A ``key=value`` pair yields a string value, a quoted value is unescaped, ``key=``
+    yields ``""`` and a bare key with no ``=`` yields ``True``. Insertion order follows
+    the line.
+
+    Args:
+        line: One logfmt line. Line breaks inside it count as whitespace.
+        strict: Reject anything go-logfmt rejects instead of reading past it.
+        duplicates: ``"last"`` keeps the last value of a repeated key, ``"first"``
+            the first, and ``"error"`` raises on a repeat.
+
+    Raises:
+        LogfmtSyntaxError: In strict mode on malformed input, or on a repeated key
+            with ``duplicates="error"``. Lenient parsing of any string never raises.
+
+    >>> parse('level=info msg="hello world" verbose')
+    {'level': 'info', 'msg': 'hello world', 'verbose': True}
     """
-    result: dict[str, str | bool] = {}
-    i, n = 0, len(line)
-    while i < n:
-        while i < n and line[i] == " ":
-            i += 1
-        if i >= n:
-            break
-        start = i
-        while i < n and line[i] not in " =":
-            i += 1
-        key = line[start:i]
-        if not key:
-            i += 1
-            continue
-        if i < n and line[i] == "=":
-            value, i = _read_value(line, i + 1)
-            result[key] = value
-        else:
-            result[key] = True
+    return entries_to_dict(scan(line, strict=strict), duplicates, line, 1)
+
+
+def parse_pairs(line: str, *, strict: bool = False) -> list[Pair]:
+    """Parse one logfmt line into ordered pairs, keeping repeated keys.
+
+    >>> parse_pairs("a=1 flag a=")
+    [Pair(key='a', value='1'), Pair(key='flag', value=None), Pair(key='a', value='')]
+    """
+    return [Pair(key, value) for key, value, _ in scan(line, strict=strict)]
+
+
+def parse_multi(line: str, *, strict: bool = False) -> dict[str, list[str | bool]]:
+    """Parse one logfmt line into a mapping of each key to all its values, in order.
+
+    >>> parse_multi("tag=a tag=b ok")
+    {'tag': ['a', 'b'], 'ok': [True]}
+    """
+    result: dict[str, list[str | bool]] = {}
+    for key, value, _ in scan(line, strict=strict):
+        result.setdefault(key, []).append(True if value is None else value)
     return result
 
 
-def serialize(mapping: Mapping[str, str | bool]) -> str:
-    """Serialize a mapping into a logfmt line.
+def serialize(mapping: Mapping[str, object], *, strict: bool = False) -> str:
+    """Serialize a mapping into a canonical logfmt line.
 
-    ``True`` becomes a bare flag, ``False`` is omitted, and a string value is quoted only
-    when it contains whitespace, a quote, an equals sign or a control character.
+    ``True`` and ``None`` become a bare key and ``False`` is omitted. Strings are quoted
+    only when needed, exactly like go-logfmt. Other values are written by their text
+    form: numbers via ``str``, dates and times in ISO 8601, enums by their value, bytes
+    as UTF-8, and lists, tuples, sets and mappings as compact JSON. Invalid key
+    characters (whitespace, ``=``, ``"``, control characters) are removed.
+
+    Args:
+        mapping: Keys to values, written in iteration order.
+        strict: Raise instead of repairing: an invalid key character, a non-string key
+            or a container value raises :class:`LogfmtEncodeError`.
+
+    Raises:
+        LogfmtEncodeError: A key is empty once invalid characters are removed, or
+            ``strict`` refuses a key or value.
+
+    >>> serialize({"level": "info", "msg": "hello world", "verbose": True, "quiet": False})
+    'level=info msg="hello world" verbose'
     """
-    parts: list[str] = []
-    for key, value in mapping.items():
-        if isinstance(value, bool):
-            if value:
-                parts.append(key)
-            continue
-        parts.append(f"{key}={_quote(value)}")
-    return " ".join(parts)
+    return serialize_pairs(mapping.items(), strict=strict)
 
 
-def _read_value(line: str, i: int) -> tuple[str, int]:
-    if i < len(line) and line[i] == '"':
-        return _read_quoted(line, i + 1)
-    start = i
-    while i < len(line) and line[i] != " ":
-        i += 1
-    return line[start:i], i
+def serialize_pairs(pairs: Iterable[tuple[str, object]], *, strict: bool = False) -> str:
+    """Serialize ordered ``(key, value)`` pairs, repeated keys included.
+
+    Values follow the same rules as :func:`serialize`, so the output of
+    :func:`parse_pairs` (where a bare key has ``None``) writes back unchanged.
+
+    >>> serialize_pairs([("tag", "a"), ("tag", "b c"), ("ok", None)])
+    'tag=a tag="b c" ok'
+    """
+    parts = (encode_pair(key, value, strict) for key, value in pairs)
+    return " ".join(part for part in parts if part is not None)
 
 
-def _read_quoted(line: str, i: int) -> tuple[str, int]:
-    out: list[str] = []
-    n = len(line)
-    while i < n:
-        c = line[i]
-        if c == "\\" and i + 1 < n:
-            out.append(_UNESCAPE.get(line[i + 1], line[i + 1]))
-            i += 2
-            continue
-        if c == '"':
-            return "".join(out), i + 1
-        out.append(c)
-        i += 1
-    return "".join(out), i
-
-
-def _quote(value: str) -> str:
-    if not _NEEDS_QUOTE.search(value):
-        return value
-    escaped = (
-        value.replace("\\", "\\\\")
-        .replace('"', '\\"')
-        .replace("\n", "\\n")
-        .replace("\r", "\\r")
-        .replace("\t", "\\t")
-    )
-    return f'"{escaped}"'
+def entries_to_dict(
+    entries: list[Entry], duplicates: Duplicates, line: str, lineno: int
+) -> dict[str, str | bool]:
+    """Fold scanned entries into a dict under a duplicate-key policy."""
+    if duplicates not in _POLICIES:
+        raise ValueError(f"duplicates must be one of {_POLICIES}, got {duplicates!r}")
+    result: dict[str, str | bool] = {}
+    for key, value, column in entries:
+        if key in result:
+            if duplicates == "first":
+                continue
+            if duplicates == "error":
+                raise LogfmtSyntaxError(f"duplicate key {key!r}", column + 1, lineno, line)
+        result[key] = True if value is None else value
+    return result
