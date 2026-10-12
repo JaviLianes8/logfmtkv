@@ -1,0 +1,16 @@
+at=info method=GET path=/ host=mutelight.org fwd="124.133.52.161" dyno=web.2 connect=4ms service=8ms status=200 bytes=1653
+level=info tag=stopping_fetchers id=ConsumerFetcherManager-1382721708341 module=kafka.consumer.ConsumerFetcherManager
+level=info msg="Stopping all fetchers" tag=stopping_fetchers id=ConsumerFetcherManager-1382721708341 module=kafka.consumer.ConsumerFetcherManager
+msg="Request finished" tag=request_finish status=200 user=brandur@mutelight.org user_id=1234 app=mutelight app_id=1234
+msg="Request errored" tag=request_error error_class=NoMethodError error_message="undefined method `serialize' for nil:NilClass" user=brandur@mutelight.org user_id=1234 app=mutelight app_id=1234
+at=info method=GET path=/ host=grafana.net fwd="124.133.124.161" service=8ms status=200
+key=value key="value in double quotes"
+time="2015-03-26T01:27:38-04:00" level=debug msg="Started observing beach" animal=walrus number=8
+time="2015-03-26T01:27:38-04:00" level=info msg="A group of walrus emerges from the ocean" animal=walrus size=10
+time="2015-03-26T01:27:38-04:00" level=warning msg="The group's number increased tremendously!" number=122 omg=true
+time="2015-03-26T01:27:38-04:00" level=debug msg="Temperature changes" temperature=-4
+time="2015-03-26T01:27:38-04:00" level=fatal msg="The ice breaks!" animal=orca err="It's over 9000!" number=100 omg=true size=9009
+time="2015-03-26T01:27:38-04:00" level=fatal method=github.com/sirupsen/arcticcreatures.migrate msg="a penguin swims by" animal=penguin
+time=2022-11-08T15:28:26.000-05:00 level=INFO msg=hello count=3
+level=INFO msg=finished req.method=GET req.url=localhost status=200 duration=1s
+msg=message a=1 g.b=2 g.h.c=3 g.d=4 e=5
