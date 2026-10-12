@@ -19,13 +19,19 @@ def matches(pairs: list[tuple[str, object]], filters: list[Filter]) -> bool:
 
 
 def _hit(key: str, value: object, wanted: Filter) -> bool:
-    """``KEY`` matches any value; ``KEY=VALUE`` matches a non-flag value by its text."""
+    """``KEY`` matches any value; ``KEY=VALUE`` compares the value's text.
+
+    A JSON boolean compares as ``true`` or ``false``; a bare logfmt key has no text and
+    only matches ``KEY``.
+    """
     if key != wanted[0]:
         return False
     if wanted[1] is None:
         return True
-    if value is None or isinstance(value, bool):
+    if value is None:
         return False
+    if isinstance(value, bool):
+        return wanted[1] == ("true" if value else "false")
     return value_text(value, False, key) == wanted[1]
 
 

@@ -87,11 +87,36 @@ def test_fmt_canonicalises(capsys: pytest.CaptureFixture[str], tmp_path: Path) -
     assert _run(capsys, "fmt", path, "-w", "b=nope")[1] == ""
 
 
-def test_fmt_reports_a_key_that_cannot_be_written(
+def test_fmt_and_keys_that_cannot_be_written(
     capsys: pytest.CaptureFixture[str], tmp_path: Path
 ) -> None:
-    code, _, err = _run(capsys, "fmt", _write(tmp_path, '"=="=1\n'))
-    assert code == 1 and "in.log:1: key '=='" in err
+    assert _run(capsys, "fmt", _write(tmp_path, '"=="=1 "\\u0001"=2 a=3\n')) == (0, "a=3\n", "")
+    code, _, err = _run(capsys, "fmt", "--strict", _write(tmp_path, "\x7f=1\n"))
+    assert code == 1 and "in.log:1: key '\\x7f'" in err
+
+
+def test_utf8_bom_is_dropped_and_utf16_is_refused(
+    capsys: pytest.CaptureFixture[str], tmp_path: Path
+) -> None:
+    bom = tmp_path / "bom.log"
+    bom.write_bytes(b"\xef\xbb\xbflevel=error msg=x\r\nlevel=info\r\n")
+    assert _run(capsys, "to-json", str(bom), "-w", "level=error")[1] == (
+        '{"level": "error", "msg": "x"}\n'
+    )
+    wide = tmp_path / "wide.log"
+    wide.write_bytes("level=error\r\n".encode("utf-16"))
+    code, out, err = _run(capsys, "check", str(wide))
+    assert (code, out) == (1, "")
+    assert "UTF-16 input is not supported" in err
+
+
+def test_where_compares_json_booleans_as_text(
+    capsys: pytest.CaptureFixture[str], tmp_path: Path
+) -> None:
+    path = _write(tmp_path, '{"ok": true, "n": 1}\n{"ok": false, "n": 2}\n')
+    assert _run(capsys, "from-json", path, "-w", "ok=true")[1] == "ok n=1\n"
+    assert _run(capsys, "from-json", path, "-w", "ok=false")[1] == "n=2\n"
+    assert _run(capsys, "to-json", _write(tmp_path, "ok\n", "f.log"), "-w", "ok=true")[1] == ""
 
 
 def test_check(capsys: pytest.CaptureFixture[str], tmp_path: Path) -> None:

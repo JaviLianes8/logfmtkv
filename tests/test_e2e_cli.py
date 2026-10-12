@@ -11,6 +11,7 @@ from __future__ import annotations
 import json
 import subprocess
 import sys
+import threading
 import venv
 from pathlib import Path
 
@@ -111,6 +112,31 @@ def test_installed_script_reports_errors_on_stderr(cli: Path) -> None:
     ]
     missing = _run(cli, "to-json", "no-such-file.log")
     assert missing.returncode == 1 and b"no-such-file.log" in missing.stderr
+
+
+def test_installed_script_exits_quietly_when_the_reader_stops(cli: Path) -> None:
+    big = "".join(f'n={i} msg="line {i}"\n' for i in range(200_000))
+    proc = subprocess.Popen(
+        [str(cli), "fmt"], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+    )
+    assert proc.stdin is not None and proc.stdout is not None and proc.stderr is not None
+    stdin = proc.stdin
+
+    def feed() -> None:
+        try:
+            stdin.write(big.encode())
+            stdin.close()
+        except OSError:
+            pass
+
+    writer = threading.Thread(target=feed, daemon=True)
+    writer.start()
+    assert proc.stdout.readline() == b'n=0 msg="line 0"\n'
+    proc.stdout.close()
+    stderr = proc.stderr.read()
+    assert proc.wait(timeout=60) == 0
+    writer.join(timeout=60)
+    assert b"Traceback" not in stderr and b"Exception ignored" not in stderr
 
 
 def test_installed_script_help_has_runnable_examples(cli: Path) -> None:

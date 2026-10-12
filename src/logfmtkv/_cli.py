@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import argparse
+import errno
+import os
 import sys
 from collections.abc import Sequence
 from typing import NoReturn
@@ -98,8 +100,21 @@ def main(argv: Sequence[str] | None = None) -> int:
     except CliError as exc:
         print(f"logfmtkv: {exc}", file=sys.stderr)
         return 1
-    except BrokenPipeError:
+    except OSError as exc:
+        # The reader went away (``| head``): POSIX raises EPIPE, Windows EINVAL.
+        if not isinstance(exc, BrokenPipeError) and exc.errno != errno.EINVAL:
+            raise
+        _silence_stdout()
         return 0
+
+
+def _silence_stdout() -> None:
+    """Point stdout at the null device so the exit-time flush cannot fail again."""
+    try:
+        devnull = os.open(os.devnull, os.O_WRONLY)
+        os.dup2(devnull, sys.stdout.fileno())
+    except (OSError, ValueError, AttributeError):
+        pass
 
 
 if __name__ == "__main__":  # pragma: no cover

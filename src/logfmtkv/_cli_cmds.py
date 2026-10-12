@@ -13,6 +13,7 @@ from typing import IO, Any, cast
 from ._cli_filters import CliError, Filter, matches, parse_filters, parse_keys, select, select_pairs
 from ._codec import Duplicates, entries_to_dict, serialize_pairs
 from ._coerce import coerce
+from ._encode import encode_key
 from ._errors import LogfmtEncodeError, LogfmtSyntaxError
 from ._scan import Entry, is_blank, scan
 
@@ -34,7 +35,7 @@ def run(args: argparse.Namespace) -> int:
             if not matches([(k, v) for k, v, _ in entries], filters):
                 continue
             if args.command == "fmt":
-                pairs = [(k, v) for k, v, _ in entries]
+                pairs = [(k, v) for k, v, _ in entries if args.strict or _writable(k)]
                 try:
                     out.write(serialize_pairs(select_pairs(pairs, keys)) + "\n")
                 except LogfmtEncodeError as exc:
@@ -126,23 +127,43 @@ def _numbered(stream: IO[str]) -> Iterator[tuple[int, str]]:
         yield lineno, raw.rstrip("\n").removesuffix("\r")
 
 
+def _writable(key: str) -> bool:
+    """Lenient fmt drops a pair whose key has no character logfmt can write."""
+    try:
+        encode_key(key, False)
+    except LogfmtEncodeError:
+        return False
+    return True
+
+
 @contextmanager
 def _open(path: str) -> Iterator[IO[str]]:
     if path == "-":
-        stdin = io.TextIOWrapper(sys.stdin.buffer, encoding="utf-8", errors="replace", newline="\n")
-        try:
+        with _decoded(sys.stdin.buffer, "<stdin>") as stdin:
             yield stdin
-        finally:
-            with suppress(ValueError, OSError):
-                stdin.detach()
         return
     try:
         # Opened outside ``with`` so only the open itself maps OSError to CliError.
-        stream = open(path, encoding="utf-8", errors="replace", newline="\n")  # noqa: SIM115
+        raw = open(path, "rb")  # noqa: SIM115
     except OSError as exc:
         raise CliError(f"{path}: {exc.strerror or exc}") from exc
-    with stream:
+    with raw, _decoded(raw, path) as stream:
         yield stream
+
+
+@contextmanager
+def _decoded(raw: IO[bytes], name: str) -> Iterator[IO[str]]:
+    """Read UTF-8 (an optional BOM is dropped); refuse UTF-16 instead of garbling it."""
+    peek = getattr(raw, "peek", None)
+    head = peek(4)[:4] if peek is not None else b""
+    if head.startswith((b"\xff\xfe", b"\xfe\xff")):
+        raise CliError(f"{name}: UTF-16 input is not supported; convert it to UTF-8")
+    stream = io.TextIOWrapper(raw, encoding="utf-8-sig", errors="replace", newline="\n")
+    try:
+        yield stream
+    finally:
+        with suppress(ValueError, OSError):
+            stream.detach()
 
 
 def _stdout() -> IO[str]:
