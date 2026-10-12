@@ -15,8 +15,8 @@ from logfmtkv import coerce, parse
         ("-4", -4),
         ("1.5", 1.5),
         ("-0.25", -0.25),
-        ("1e3", 1000.0),
-        ("2.5E-2", 0.025),
+        ("1e+20", 1e20),
+        ("0.1", 0.1),
         ("true", True),
         ("false", False),
     ],
@@ -29,7 +29,11 @@ def test_numbers_and_booleans_are_coerced(text: str, value: object) -> None:
 
 @pytest.mark.parametrize(
     "text",
-    ["", "007", "-0", "+1", "1_000", "8ms", "nan", "inf", "1e999", "True", "1.", ".5", "0x10"],
+    [
+        *("", "007", "-0", "+1", "1_000", "8ms", "nan", "inf", "1e999", "True", "1.", ".5"),
+        *("0x10", "1.50", "1e5", "1e-400", "2.5E-2", "12345678901234567890.5"),
+        "0.1000000000000000055511151231257827",
+    ],
 )
 def test_ambiguous_text_is_left_alone(text: str) -> None:
     assert coerce(text) == text

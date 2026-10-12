@@ -22,7 +22,8 @@ All notable changes to this project are documented here. The format follows
   of lines, with line numbers in errors.
 - `serialize_pairs`, `quote_value`, and serialization of any Python value (numbers,
   dates, enums, bytes, exceptions, containers as JSON); `None` writes a bare key.
-- `coerce`: lossless conversion of values into `int`, `float` and `bool`.
+- `coerce`: lossless conversion of values into `int`, `float` and `bool` (a float only
+  when it prints back as the same text).
 - The `logfmtkv` command: `to-json`, `from-json`, `fmt` and `check`.
 - Golden test vectors from go-logfmt, Heroku, Grafana Loki, logrus and Go's slog.
 
@@ -30,7 +31,10 @@ All notable changes to this project are documented here. The format follows
 
 - Output now matches go-logfmt byte for byte: a backslash alone no longer forces
   quoting, other control characters are written as `\u00XX` and the literal text
-  `null` is quoted.
+  `null` is quoted. The one exception is the character after U+FFFD, which logfmtkv
+  always escapes.
+- Unicode whitespace above U+0020 (such as U+00A0 or U+2028) no longer forces quoting,
+  as in go-logfmt. Split records on `\n` only, not with `str.splitlines()`.
 - Invalid key characters are removed when writing instead of producing an unparseable
   line.
 

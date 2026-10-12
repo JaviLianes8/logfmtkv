@@ -137,6 +137,6 @@ def _assert_coerce_is_lossless(text: str) -> None:
     elif isinstance(result, int):
         assert str(result) == text
     elif isinstance(result, float):
-        assert float(text) == result
+        assert repr(result) == text
     else:
         assert result == text

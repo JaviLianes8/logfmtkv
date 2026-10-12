@@ -3,7 +3,8 @@
 A ranked list of substantial, coherent improvements for this round. The point of the
 round is real-world interop: logfmt as it is actually written by go-logfmt, Heroku
 (brandur.org/logfmt), Grafana Loki, logrus and Go's `log/slog` TextHandler. Every item
-is additive: `parse` and `serialize` keep their signatures and their documented results.
+is additive: `parse` and `serialize` keep their signatures, and the only changes to
+their results are the interop fixes listed below and in the changelog.
 
 ## Starting point
 
@@ -26,7 +27,8 @@ back. Gaps found while reading the code against the reference implementations:
    value exactly when go-logfmt does (any byte <= space, `=`, `"`, DEL, U+FFFD) and
    escapes `\\ \" \n \r \t`, other control characters as `\u00XX`. The decoder reads
    `\" \\ \/ \' \b \f \n \r \t \uXXXX` with UTF-16 surrogate pairs. Canonical output is
-   byte-for-byte what go-logfmt writes for the same pairs.
+   byte-for-byte what go-logfmt writes for the same pairs, except that the character
+   after U+FFFD is always escaped (go-logfmt copies it raw).
 
 2. **Strict mode matching go-logfmt.** `strict=True` rejects what go-logfmt rejects
    (`=value`, `a==`, `k=b"ar`, quoted keys, unterminated or invalid quoted values,
@@ -56,18 +58,20 @@ back. Gaps found while reading the code against the reference implementations:
 
 8. **Safe serialization of arbitrary Python values.** `serialize` accepts any value:
    numbers, `Decimal`, `datetime` (ISO 8601), enums (their value), bytes (UTF-8 with
-   replacement), exceptions (their message) and containers (compact JSON). `None` and
+   replacement), exceptions (via `str()`) and containers (compact JSON). `None` and
    `True` write a bare key, `False` is omitted. Invalid key characters are stripped like
    go-logfmt, or rejected with `strict=True`. `serialize_pairs` writes ordered pairs,
    duplicates included. `quote_value` exposes the canonical value quoting.
 
-9. **Round-trip guarantee.** For every mapping of valid keys to strings or `True`,
+9. **Round-trip guarantee.** For every mapping of valid keys to strings without lone
+   surrogates, or `True`,
    `parse(serialize(m)) == m` in both modes, and `serialize` of a parsed canonical line
    reproduces it exactly. Pinned by a seeded fuzz test.
 
 10. **Typed value coercion helper.** `coerce` turns `"200"`, `"1.5"`, `"true"` into
-    `int`, `float` and `bool` and leaves everything else (including `"007"` and `"8ms"`)
-    untouched, so no information is lost.
+    `int`, `float` and `bool` only when the result prints back as the same text, and
+    leaves everything else (including `"007"`, `"1.50"` and `"8ms"`) untouched, so no
+    information is lost.
 
 11. **A command line tool.** `logfmtkv to-json`, `from-json`, `fmt` and `check`: convert
     logfmt to JSON lines and back, canonicalise, filter records with `--where`, pick and

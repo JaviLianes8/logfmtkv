@@ -35,7 +35,7 @@ A logfmt line is a run of `key=value` pairs separated by whitespace:
 time="2015-03-26T01:27:38-04:00" level=warning msg="The group's number increased tremendously!" number=122 omg=true
 ```
 
-- A key is any run of characters other than whitespace, `=` and `"`.
+- A key is any run of characters above space (U+0020) other than `=` and `"`.
 - A value is either bare (no whitespace, `=` or `"`) or double-quoted.
 - `key=` is an empty value; `key` alone is a bare key (a flag).
 - Any character at or below space separates pairs: spaces, tabs, control bytes.
@@ -118,8 +118,12 @@ byte-for-byte what go-logfmt writes for the same string pairs:
 - backslashes alone do not force quoting (`path=C:\tmp`);
 - invalid key characters are removed (`strict=True` raises `LogfmtEncodeError`).
 
+One deliberate exception: go-logfmt copies the character right after an invalid byte or
+U+FFFD without escaping it, which can produce an unparseable line; logfmtkv always
+escapes it.
+
 Any Python value is accepted: numbers via `str`, `Decimal`, dates and times in ISO 8601,
-enums by their value, bytes as UTF-8, exceptions by their message, and lists, tuples,
+enums by their value, bytes as UTF-8, exceptions via `str()`, and lists, tuples,
 sets and dicts as compact JSON. With `strict=True` a container value raises instead.
 
 ```python
@@ -137,14 +141,15 @@ serialize_pairs([("tag", "a"), ("tag", "b")])
 
 ### Round-trip guarantee
 
-For any mapping of valid keys to strings or `True`, `parse(serialize(m)) == m` in both
-modes, and serializing a parsed canonical line gives the same line back. Ordered pairs
+For any mapping of valid keys to strings (without lone surrogates, which are written as
+U+FFFD) or `True`, `parse(serialize(m)) == m` in both modes, and serializing a parsed canonical line gives the same line back. Ordered pairs
 round-trip through `serialize_pairs` and `parse_pairs`, repeated keys included. A seeded
 fuzz test pins this.
 
 ### Typed values
 
-`coerce` turns a value into `int`, `float` or `bool` only when nothing is lost:
+`coerce` turns a value into `int`, `float` or `bool` only when nothing is lost, that is
+when the result prints back as the same text (`"1.50"` and `"1e5"` stay strings):
 
 ```python
 from logfmtkv import coerce, parse
@@ -187,9 +192,12 @@ app.log:2:4: unexpected '"'
 logfmtkv: 1 of 2 records invalid
 ```
 
-`FILE` defaults to standard input. Input is UTF-8, one record per line. `--where` is
-repeatable and all filters must match; `KEY` alone matches when the key is present.
-Errors go to standard error with exit status 1.
+`FILE` defaults to standard input. Input is UTF-8 (a leading BOM is ignored; UTF-16 is
+refused with an error), one record per line. `--where` is repeatable and all filters
+must match; `KEY` alone matches when the key is present, and `KEY=VALUE` compares the
+value's text (a JSON boolean as `true` or `false`). `fmt` drops a pair whose key has no
+writable character unless `--strict` is given. Errors go to standard error with exit
+status 1, and output cut short by the reader (`| head`) ends quietly.
 
 ## Why
 
