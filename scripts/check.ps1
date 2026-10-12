@@ -9,8 +9,8 @@ function Invoke-Step($label, [scriptblock]$cmd) {
     if ($LASTEXITCODE -ne 0) { Write-Host "FAILED: $label (exit $LASTEXITCODE)"; exit $LASTEXITCODE }
 }
 
-Invoke-Step "ruff format" { ruff format --check src tests }
-Invoke-Step "ruff lint"   { ruff check src tests }
-Invoke-Step "mypy"        { mypy src tests }
+Invoke-Step "ruff format" { ruff format --check . }
+Invoke-Step "ruff lint"   { ruff check . }
+Invoke-Step "mypy"        { mypy --strict src tests }
 Invoke-Step "pytest"      { pytest }
 Write-Host "gate green"
