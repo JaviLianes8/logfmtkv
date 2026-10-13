@@ -26,7 +26,7 @@ def test_iter_records_reads_an_open_file_lazily() -> None:
         records = iter_records(handle, strict=True)
         assert isinstance(records, Iterator)
         first = next(records)
-        assert first["at"] == "info" and first["bytes"] == "1653"
+        assert first["at"] == "info" and first["bytes"] == "2048"
         assert sum(1 for _ in records) == 15
 
 

@@ -43,7 +43,7 @@ PUBLIC_API: list[str] = [
     "serialize",
     "serialize_pairs",
 ]
-REAL = [c for c in GOLDEN["parse"] if c["strict"] == "same" and c["source"] != "go-logfmt"]
+REAL = [c for c in GOLDEN["parse"] if c["strict"] == "same" and c["kind"] == "app"]
 
 
 def test_all_lists_exactly_the_public_api() -> None:
